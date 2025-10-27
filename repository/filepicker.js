@@ -692,7 +692,7 @@ M.core_filepicker.init = function(Y, options) {
                                 // File type errors are not really errors, so report them less scarily.
                                 Y.use('moodle-core-notification-alert', function() {
                                     return new M.core.alert({
-                                        title: M.util.get_string('error', 'moodle'),
+                                        title: M.util.get_string('invalidfiletypetitle', 'repository'),
                                         message: data.error,
                                     });
                                 });
