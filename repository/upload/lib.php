@@ -189,7 +189,10 @@ class repository_upload extends repository {
             $filemimetype = file_storage::mimetype($_FILES[$elname]['tmp_name'], $record->filename);
             if (!in_array($filemimetype, $this->mimetypes)) {
                 $util = new \core_form\filetypes_util();
-                throw new moodle_exception('invalidfiletype', 'repository', '',
+                throw new moodle_exception(
+                    'invalidfiletypewithaccepted',
+                    'repository',
+                    '',
                     [
                         'filename' => $record->filename,
                         'acceptedfiletypes' => $OUTPUT->render_from_template(

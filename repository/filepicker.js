@@ -688,7 +688,7 @@ M.core_filepicker.init = function(Y, options) {
                         }
                         // error checking
                         if (data && data.error) {
-                            if (data.errorcode === 'invalidfiletype') {
+                            if (data.errorcode === 'invalidfiletypewithaccepted') {
                                 // File type errors are not really errors, so report them less scarily.
                                 Y.use('moodle-core-notification-alert', function() {
                                     return new M.core.alert({
