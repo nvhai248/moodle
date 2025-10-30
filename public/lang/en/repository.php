@@ -148,8 +148,8 @@ $string['instances'] = 'Repository instances';
 $string['instancesforsite'] = '{$a} Site-wide common instance(s)';
 $string['instancesforcourses'] = '{$a} Course-wide common instance(s)';
 $string['instancesforusers'] = '{$a} User private instance(s)';
-$string['invalidfiletype'] = 'The file ‘{$a->filename}’ is not an accepted file type. The accepted file types are: {$a->acceptedfiletypes}';
 $string['invalidfiletypetitle'] = 'File type not accepted';
+$string['invalidfiletypewithaccepted'] = 'The file \'{$a->filename}\' is not an accepted file type. The accepted file types are: {$a->acceptedfiletypes}';
 $string['invalidjson'] = 'Invalid JSON string';
 $string['invalidplugin'] = 'Invalid repository {$a} plugin';
 $string['invalidrepositoryid'] = 'Invalid repository ID';
@@ -268,3 +268,6 @@ $string['privacy:metadata:repository_instances:username'] = 'The optional userna
 $string['privacy:metadata:repository_instances:password'] = 'The optional password configured for the repository instance.';
 $string['privacy:metadata:repository_instances:timecreated'] = 'The date/time of creation for the repository instance.';
 $string['privacy:metadata:repository_instances:timemodified'] = 'The date/time of modification of the repository instance.';
+
+// Deprecated since Moodle 5.1.
+$string['invalidfiletype'] = '{$a} filetype cannot be accepted.';
