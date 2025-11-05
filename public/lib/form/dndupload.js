@@ -652,15 +652,20 @@ M.form_dndupload.init = function(Y, options) {
         },
 
         /**
-         * Display a message in a popup
-         * @param string msg - the message to display
-         * @param string type - 'error' or 'info'
+         * Display a message in a popup dialog.
+         *
+         * @param {string} msg - The message text to display.
+         * @param {string} type - The message type, 'error' or 'info'.
+         * @param {string} errorCode - The associated error code (optional).
          */
-        print_msg: function(msg, type) {
+        printMsg: function(msg, type, errorCode) {
             var header = M.util.get_string('error', 'moodle');
             if (type != 'error') {
-                type = 'info'; // one of only two types excepted
+                type = 'info'; // One of only two types excepted.
                 header = M.util.get_string('info', 'moodle');
+            }
+            if (errorCode === 'invalidfiletype') {
+                header = M.util.get_string('invalidfiletypetitle', 'repository');
             }
             if (!this.msg_dlg) {
                 this.msg_dlg_node = Y.Node.create(M.core_filepicker.templates.message);
@@ -702,7 +707,7 @@ M.form_dndupload.init = function(Y, options) {
                 if (this.options.maxbytes > 0 && files[i].size > this.options.maxbytes) {
                     // Check filesize before attempting to upload.
                     var maxbytesdisplay = this.display_size(this.options.maxbytes);
-                    this.print_msg(M.util.get_string('maxbytesfile', 'error', {
+                    this.printMsg(M.util.get_string('maxbytesfile', 'error', {
                             file: files[i].name,
                             size: maxbytesdisplay
                         }), 'error');
@@ -764,7 +769,7 @@ M.form_dndupload.init = function(Y, options) {
                 // Too many files - abort entire upload.
                 this.uploadqueue = [];
                 this.renamequeue = [];
-                this.print_msg(M.util.get_string('maxfilesreached', 'moodle', this.options.maxfiles), 'error');
+                this.printMsg(M.util.get_string('maxfilesreached', 'moodle', this.options.maxfiles), 'error');
                 return false;
             }
             // The new file will cause the area to reach its limit, we cancel the upload of all files.
@@ -774,7 +779,7 @@ M.form_dndupload.init = function(Y, options) {
                 if (sizereached > this.options.areamaxbytes) {
                     this.uploadqueue = [];
                     this.renamequeue = [];
-                    this.print_msg(M.util.get_string('maxareabytesreached', 'moodle'), 'error');
+                    this.printMsg(M.util.get_string('maxareabytesreached', 'moodle'), 'error');
                     return false;
                 }
             }
@@ -1051,7 +1056,7 @@ M.form_dndupload.init = function(Y, options) {
                         var result = JSON.parse(xhr.responseText);
                         if (result) {
                             if (result.error) {
-                                self.print_msg(result.error, 'error'); // TODO add filename?
+                                self.printMsg(result.error, 'error', result.errorcode);
                                 self.uploadfinished();
                             } else {
                                 // Only update the filepicker if there were no errors
@@ -1072,7 +1077,7 @@ M.form_dndupload.init = function(Y, options) {
                         }
                         self.do_upload(result); // continue uploading
                     } else {
-                        self.print_msg(M.util.get_string('serverconnection', 'error'), 'error');
+                        self.printMsg(M.util.get_string('serverconnection', 'error'), 'error');
                         self.uploadfinished();
                     }
                 }
