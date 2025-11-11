@@ -1052,7 +1052,7 @@ M.form_dndupload.init = function(Y, options) {
                         if (result) {
                             if (result.error) {
                                 self.print_msg(result.error, 'error'); // TODO add filename?
-                                self.uploadfinished();
+                                return self.uploadfinished();
                             } else {
                                 // Only update the filepicker if there were no errors
                                 if (result.event == 'fileexists') {
