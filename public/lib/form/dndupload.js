@@ -325,9 +325,18 @@ M.form_dndupload.init = function(Y, options) {
             this.hide_drop_target();
 
             var files = e._event.dataTransfer.files;
+            var items = [];
+            for (var i = 0; i < e._event.dataTransfer.items.length; i++) {
+                var entry = e._event.dataTransfer.items[i].webkitGetAsEntry();
+                if (!entry) {
+                    continue;
+                }
+                items.push(entry);
+            }
             if (this.filemanager) {
                 var options = {
                     files: files,
+                    items: items,
                     options: this.options,
                     repositoryid: this.repositoryid,
                     currentfilecount: this.filemanager.filecount, // All files uploaded.
@@ -353,6 +362,7 @@ M.form_dndupload.init = function(Y, options) {
                 if (files.length >= 1) {
                     options = {
                         files:[files[0]],
+                        items: items,
                         options: this.options,
                         repositoryid: this.repositoryid,
                         currentfilecount: 0,
@@ -577,6 +587,8 @@ M.form_dndupload.init = function(Y, options) {
         callbackcancel: null,
         // The list of files dropped onto the element.
         files: null,
+        // The list of data transfer items.
+        items: null,
         // The ID of the 'upload' repository.
         repositoryid: 0,
         // Array of files already in the current folder (to check for name clashes).
@@ -630,6 +642,7 @@ M.form_dndupload.init = function(Y, options) {
             this.callbackNumberOfRequestUpload = params.callbackNumberOfRequestUpload;
             this.callbackClearProgress = params.callbackClearProgress;
             this.callbackStartProgress = params.callbackStartProgress;
+            this.items = params.items;
 
             // Retrieve the current size of the area.
             for (var i = 0; i < this.currentfiles.length; i++) {
@@ -1072,7 +1085,14 @@ M.form_dndupload.init = function(Y, options) {
                         }
                         self.do_upload(result); // continue uploading
                     } else {
-                        self.print_msg(M.util.get_string('serverconnection', 'error'), 'error');
+                        var msg = M.util.get_string('serverconnection', 'error');
+                        for (var i = 0; i < self.items.length; i++) {
+                            // If an item is a directory and its name matches the filename, set a specific error message.
+                            if (self.items[i].isDirectory && self.items[i].name === filename) {
+                                msg = M.util.get_string('upload_error_invalid_file', 'repository_upload', filename);
+                            }
+                        }
+                        self.print_msg(msg, 'error');
                         self.uploadfinished();
                     }
                 }
