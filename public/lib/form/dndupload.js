@@ -325,18 +325,11 @@ M.form_dndupload.init = function(Y, options) {
             this.hide_drop_target();
 
             var files = e._event.dataTransfer.files;
-            var items = [];
-            for (var i = 0; i < e._event.dataTransfer.items.length; i++) {
-                var entry = e._event.dataTransfer.items[i].webkitGetAsEntry();
-                if (!entry) {
-                    continue;
-                }
-                items.push(entry);
-            }
+            const items = e._event.dataTransfer.items;
+            let options;
             if (this.filemanager) {
-                var options = {
+                options = {
                     files: files,
-                    items: items,
                     options: this.options,
                     repositoryid: this.repositoryid,
                     currentfilecount: this.filemanager.filecount, // All files uploaded.
@@ -355,14 +348,10 @@ M.form_dndupload.init = function(Y, options) {
                     callbackClearProgress: Y.bind('clear_progress', this),
                     callbackStartProgress: Y.bind('startProgress', this),
                 };
-                this.show_progress();
-                var uploader = new dnduploader(options);
-                uploader.start_upload();
             } else {
                 if (files.length >= 1) {
                     options = {
                         files:[files[0]],
-                        items: items,
                         options: this.options,
                         repositoryid: this.repositoryid,
                         currentfilecount: 0,
@@ -381,11 +370,24 @@ M.form_dndupload.init = function(Y, options) {
                         callbackClearProgress: Y.bind('clear_progress', this),
                         callbackStartProgress: Y.bind('startProgress', this),
                     };
-                    this.show_progress();
-                    uploader = new dnduploader(options);
-                    uploader.start_upload();
                 }
             }
+            let uploader = new dnduploader(options);
+            for (let i = 0; i < items.length; i++) {
+                let entry = items[i].webkitGetAsEntry();
+                if (!entry) {
+                    continue;
+                }
+                if (entry.isDirectory && entry.name) {
+                    uploader.print_msg(
+                        M.util.get_string('upload_error_folders_not_supported', 'repository_upload', entry.name),
+                        'error',
+                        'uploaderrorfoldersnotsupported');
+                    return false;
+                }
+            }
+            this.show_progress();
+            uploader.start_upload();
 
             return false;
         },
@@ -587,8 +589,6 @@ M.form_dndupload.init = function(Y, options) {
         callbackcancel: null,
         // The list of files dropped onto the element.
         files: null,
-        // The list of data transfer items.
-        items: null,
         // The ID of the 'upload' repository.
         repositoryid: 0,
         // Array of files already in the current folder (to check for name clashes).
@@ -642,7 +642,6 @@ M.form_dndupload.init = function(Y, options) {
             this.callbackNumberOfRequestUpload = params.callbackNumberOfRequestUpload;
             this.callbackClearProgress = params.callbackClearProgress;
             this.callbackStartProgress = params.callbackStartProgress;
-            this.items = params.items;
 
             // Retrieve the current size of the area.
             for (var i = 0; i < this.currentfiles.length; i++) {
@@ -665,15 +664,20 @@ M.form_dndupload.init = function(Y, options) {
         },
 
         /**
-         * Display a message in a popup
-         * @param string msg - the message to display
-         * @param string type - 'error' or 'info'
+         * Display a message in a popup dialog.
+         *
+         * @param {string} msg - The message text to display.
+         * @param {string} type - The message type, 'error' or 'info'.
+         * @param {string} errorCode - The associated error code (optional).
          */
-        print_msg: function(msg, type) {
+        print_msg: function(msg, type, errorCode) {
             var header = M.util.get_string('error', 'moodle');
             if (type != 'error') {
-                type = 'info'; // one of only two types excepted
+                type = 'info'; // One of only two types excepted.
                 header = M.util.get_string('info', 'moodle');
+            }
+            if (errorCode === 'uploaderrorfoldersnotsupported') {
+                header = M.util.get_string('upload_error_folders_not_supported_title', 'repository_upload');
             }
             if (!this.msg_dlg) {
                 this.msg_dlg_node = Y.Node.create(M.core_filepicker.templates.message);
@@ -1085,14 +1089,7 @@ M.form_dndupload.init = function(Y, options) {
                         }
                         self.do_upload(result); // continue uploading
                     } else {
-                        var msg = M.util.get_string('serverconnection', 'error');
-                        for (var i = 0; i < self.items.length; i++) {
-                            // If an item is a directory and its name matches the filename, set a specific error message.
-                            if (self.items[i].isDirectory && self.items[i].name === filename) {
-                                msg = M.util.get_string('upload_error_invalid_file', 'repository_upload', filename);
-                            }
-                        }
-                        self.print_msg(msg, 'error');
+                        self.print_msg(M.util.get_string('serverconnection', 'error'), 'error');
                         self.uploadfinished();
                     }
                 }
