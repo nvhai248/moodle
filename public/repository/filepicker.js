@@ -1892,7 +1892,51 @@ M.core_filepicker.init = function(Y, options) {
                 node.all('label').set('for', node.one('input,select').generateID());
             });
             content.one('form').set('id', id);
-            content.one('.fp-file input').set('name', 'repo_upload_file');
+            // Define element IDs.
+            const ids = {
+                restrictionsSpan: 'fp-restrictions-span-' + client_id,
+                filetypesDescriptions: 'form-filetypes-descriptions-' + client_id,
+                filetypesDescriptionsIntro: 'filetypes-descriptions-intro-' + client_id,
+            };
+
+            /**
+             * Sets unique IDs for file type restriction and description elements within the file picker or file manager wrapper.
+             *
+             * @param {Y.Node} wrapper - The YUI Node wrapper element to search within (e.g., filepicker or filemanager wrapper).
+             * @param {Object} ids - An object containing the IDs to assign to relevant elements.
+             *   - restrictionsSpan: ID for the restrictions span element.
+             *   - filetypesDescriptions: ID for the file types descriptions element.
+             *   - filetypesDescriptionsIntro: ID for the file types descriptions intro element.
+             */
+            function setFileTypeIds(wrapper, ids) {
+                if (!wrapper) {
+                    return;
+                }
+                const parent = wrapper.get('parentNode');
+                const restrictionSpan = wrapper.one('.fp-restrictions span');
+                if (restrictionSpan) {
+                    restrictionSpan.set('id', ids.restrictionsSpan);
+                }
+                const filetypesDescriptions = parent.one('.form-filetypes-descriptions');
+                if (filetypesDescriptions) {
+                    filetypesDescriptions.set('id', ids.filetypesDescriptions);
+                }
+                const filetypesDescriptionsIntro = parent.one('.filetypes-descriptions-intro');
+                if (filetypesDescriptionsIntro) {
+                    filetypesDescriptionsIntro.set('id', ids.filetypesDescriptionsIntro);
+                }
+            }
+
+            setFileTypeIds(Y.one('#filepicker-wrapper-' + client_id), ids);
+            setFileTypeIds(Y.one('#filemanager-' + this.options.client_id), ids);
+
+            content
+                .one('.fp-file input')
+                .set('name', 'repo_upload_file')
+                .set(
+                    'aria-describedby',
+                    ids.restrictionsSpan + ' ' + ids.filetypesDescriptionsIntro + ' ' + ids.filetypesDescriptions,
+                );
             if (data.upload.label && content.one('.fp-file label')) {
                 content.one('.fp-file label').setContent(data.upload.label);
             }
