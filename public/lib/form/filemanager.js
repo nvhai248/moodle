@@ -254,12 +254,23 @@ M.form_filemanager.init = function(Y, options) {
                 }
             }, true);
         },
-        /** displays message in a popup */
-        print_msg: function(msg, type, options) {
+        /**
+         * Displays a message in a popup dialog.
+         *
+         * @param {string} msg - The message to display in the popup.
+         * @param {string} type - The type of message ('error' or 'info').
+         * @param {Object} [options] - Additional options for the dialog (e.g., previousActiveElement).
+         * @param {string|number} [errorCode] - Optional error code for further identification.
+         * @returns {void}
+         */
+        print_msg: function(msg, type, options, errorCode) {
             var header = M.util.get_string('error', 'moodle');
             if (type != 'error') {
                 type = 'info'; // one of only two types excepted
                 header = M.util.get_string('info', 'moodle');
+            }
+            if (errorCode === 'invalidfiletype') {
+                header = M.util.get_string('invalidfiletypetitle', 'repository');
             }
             if (!this.msg_dlg) {
                 this.msg_dlg_node = Y.Node.create(M.form_filemanager.templates.message);
@@ -283,8 +294,13 @@ M.form_filemanager.init = function(Y, options) {
             }
 
             this.msg_dlg.set('headerContent', header);
-            this.msg_dlg_node.removeClass('fp-msg-info').removeClass('fp-msg-error').addClass('fp-msg-'+type)
-            this.msg_dlg_node.one('.fp-msg-text').setContent(Y.Escape.html(msg));
+            this.msg_dlg_node.removeClass('fp-msg-info').removeClass('fp-msg-error').addClass('fp-msg-' + type);
+            if (errorCode === 'invalidfiletype') {
+                // Allow HTML for accepted file types list.
+                this.msg_dlg_node.one('.fp-msg-text').setContent(msg);
+            } else {
+                this.msg_dlg_node.one('.fp-msg-text').setContent(Y.Escape.html(msg));
+            }
             this.msg_dlg.show();
         },
         is_disabled: function() {
@@ -850,16 +866,38 @@ M.form_filemanager.init = function(Y, options) {
                     var originalextension = (originalfilenamearr.length > 1) ? originalfilenamearr.pop() : "";
                     var newfilenamearr = newfilename.split('.');
                     var newextension = (newfilenamearr.length > 1) ? newfilenamearr.pop() : "";
+                    let stringVars;
 
                     if (newextension !== originalextension) {
                         if (newextension === "") {
                             var string = M.util.get_string('originalextensionremove', 'repository', originalextension);
+                        } else if (!this.isValidFileType(`.${newextension}`, options.accepted_types)) {
+                            let filemanager = Y.one('#filemanager-' + this.client_id)
+                                || Y.one('#filepicker-wrapper-' + this.client_id);
+                            const fileTypesDescription = filemanager.get('parentNode').one('.form-filetypes-descriptions');
+                            stringVars = {
+                                fileextension: newextension,
+                                acceptedfiletypes: fileTypesDescription ? fileTypesDescription.getContent() : '',
+                            };
+                            this.print_msg(
+                                M.util.get_string('updateinvalidfiletype', 'repository', stringVars),
+                                'error',
+                                options,
+                                'invalidfiletype',
+                            );
+                            // Revert the filename input to the original value.
+                            selectnode.one('.fp-saveas input').set('value', fileinfo.fullname);
+                            return;
                         } else {
-                            var stringvars = {
-                                originalextension: originalextension,
-                                newextension: newextension
+                            stringVars = {
+                                originalextension: `.${originalextension}`,
+                                newextension: `.${newextension}`,
                             }
-                            string = M.util.get_string('originalextensionchange', 'repository', stringvars);
+                            dialog_options.stringTitleKey = 'updatefileextensiontitle';
+                            dialog_options.stringTitleComponent = 'repository';
+                            dialog_options.message = M.util.get_string('updatefileextensionmessage', 'repository', stringVars);
+                            this.show_confirm_dialog(dialog_options);
+                            return;
                         }
                         warnings = warnings.concat('<li>', string, '</li>');
                     }
@@ -907,15 +945,92 @@ M.form_filemanager.init = function(Y, options) {
             });
         },
         /**
+         * Validate a file extension against accepted types.
+         *
+         * @param {string} fileExtension - Extension including dot (e.g. ".jpg").
+         * @param {string|array} acceptedTypes - "*" | "optimised_image" | array of category names or extensions.
+         * @returns {boolean} Whether the file is allowed.
+         */
+        isValidFileType: function(fileExtension, acceptedTypes) {
+            const groups = {
+                archive: ['.7z', '.bdoc', '.cdoc', '.ddoc', '.gtar', '.gz',
+                    '.gzip', '.hqx', '.rar', '.sit', '.tar', '.tgz', '.zip'],
+                audio: ['.aac', '.aif', '.aifc', '.aiff', '.au', '.flac', '.m3u',
+                    '.m4a', '.mp3', '.oga', '.ogg', '.ra', '.ram', '.rm', '.wav', '.wma'],
+                html_audio: ['.aac', '.flac', '.m4a', '.mp3', '.oga', '.ogg', '.wav'],
+                web_audio: ['.aac', '.flac', '.m4a', '.mp3', '.oga', '.ogg', '.ra', '.wav'],
+                document: ['.doc', '.docx', '.epub', '.gdoc', '.odt', '.oth', '.ott', '.pdf', '.rtf'],
+                html_track: ['.vtt'],
+                image: ['.ai', '.bmp', '.gdraw', '.gif', '.ico', '.jpe', '.jpeg', '.jpg',
+                    '.pct', '.pic', '.pict', '.png', '.svg', '.svgz', '.tif', '.tiff', '.webp'],
+                optimised_image: ['.gif', '.jpe', '.jpeg', '.jpg', '.png', '.webp'],
+                web_image: ['.gif', '.jpe', '.jpeg', '.jpg', '.png', '.svg', '.svgz', '.webp'],
+                presentation: ['.gslides', '.odp', '.otp', '.potm', '.potx', '.ppam', '.pps',
+                    '.ppsm', '.ppsx', '.ppt', '.pptm', '.pptx', '.pub', '.sti', '.sxi'],
+                spreadsheet: ['.csv', '.gsheet', '.ods', '.ots', '.xls', '.xlsm', '.xlsx'],
+                media_source: ['.m3u8', '.mpd'],
+                video: ['.3gp', '.asf', '.avi', '.dif', '.dv', '.f4v', '.flv', '.fmp4', '.m4v',
+                    '.mov', '.movie', '.mp4', '.mpe', '.mpeg', '.mpg', '.ogv', '.qt', '.rmvb', '.rv', '.ts', '.webm', '.wmv'],
+                html_video: ['.fmp4', '.m4v', '.mov', '.mp4', '.ogv', '.webm'],
+                web_video: ['.avi', '.f4v', '.flv', '.fmp4', '.m4v', '.mov', '.mp4', '.mpe',
+                    '.mpeg', '.mpg', '.ogv', '.qt', '.ts', '.webm'],
+                web_file: ['.css', '.htm', '.html', '.js', '.scss', '.xhtml'],
+            };
+
+            // Normalize to lower-case.
+            fileExtension = fileExtension.toLowerCase();
+            if (typeof acceptedTypes === 'string') {
+                if (acceptedTypes === '*') {
+                    return true;
+                }
+                if (acceptedTypes in groups) {
+                    return groups[acceptedTypes].includes(fileExtension);
+                }
+                return acceptedTypes === fileExtension;
+            }
+
+            if (Array.isArray(acceptedTypes)) {
+                if (acceptedTypes.length === 0) {
+                    return true;
+                }
+                for (let type of acceptedTypes) {
+                    if (type === '*') {
+                        return true;
+                    }
+                    if (type in groups) {
+                        if (groups[type].includes(fileExtension)) {
+                            return true;
+                        }
+                    } else if (type.startsWith('.')) {
+                        if (type === fileExtension) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        },
+        /**
          * Displays a confirmation dialog
-         * Expected attributes in dialog_options: message, callback, callbackargs(optional), scope(optional)
+         *
+         * @param {Object} dialogOptions - options for the confirmation dialog.
+         *   - message: The dialog message.
+         *   - callback: Function to call on confirmation.
+         *   - callbackargs (optional): Arguments for the callback.
+         *   - scope (optional): Scope for the callback.
+         *   - stringTitleKey (optional): String key for the dialog title (default: 'confirm').
+         *   - stringTitleComponent (optional): Language component for the title (default: 'moodle').
          */
         show_confirm_dialog: function(dialogOptions) {
+            const stringTitleKey = dialogOptions.stringTitleKey ? dialogOptions.stringTitleKey : 'confirm';
+            const stringTitleComponent = dialogOptions.stringTitleComponent ? dialogOptions.stringTitleComponent : 'moodle';
+            const buttonKey = dialogOptions.stringTitleKey && dialogOptions.stringTitleKey ? 'rename' : 'yes';
             require(['core/notification', 'core/str'], function(Notification, Str) {
                 Notification.saveCancelPromise(
-                    Str.get_string('confirm', 'moodle'),
+                    Str.get_string(stringTitleKey, stringTitleComponent),
                     dialogOptions.message,
-                    Str.get_string('yes', 'moodle')
+                    Str.get_string(buttonKey, 'moodle'),
                 ).then(function() {
                     dialogOptions.callback.apply(dialogOptions.scope, dialogOptions.callbackargs);
                     return;
