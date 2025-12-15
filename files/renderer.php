@@ -120,7 +120,7 @@ class core_files_renderer extends plugin_renderer_base {
                 ['selectallornone', 'form'],
                 ['updateinvalidfiletype', 'repository'],
                 ['updatefileextensiontitle', 'repository'],
-                ['updatefileextensionmessage', 'repository'],
+                ['originalextensionchange', 'repository'],
                 ['invalidfiletypetitle', 'repository'],
             )
         );
