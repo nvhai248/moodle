@@ -828,6 +828,8 @@ class page_requirements_manager {
                             ['referencesexist', 'repository'],
                             ['select', 'repository'],
                             ['invalidfiletypetitle', 'repository'],
+                            ['invalidfiletypewithaccepted', 'repository'],
+                            ['maxbytesfile', 'error'],
                         ],
                     ];
                     break;
@@ -887,7 +889,9 @@ class page_requirements_manager {
                             ['sizegb', 'moodle'], ['sizemb', 'moodle'], ['sizekb', 'moodle'], ['sizeb', 'moodle'],
                             ['maxareabytesreached', 'moodle'], ['serverconnection', 'error'],
                             ['changesmadereallygoaway', 'moodle'], ['complete', 'moodle'],
+                            ['invalidfiletypewithaccepted', 'repository'],
                             ['invalidfiletypetitle', 'repository'],
+                            ['errorfileuploadtitle', 'repository'],
                         ],
                     ];
                     break;
